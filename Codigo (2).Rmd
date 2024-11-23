@@ -1,0 +1,227 @@
+---
+title: "Entrega 3"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+  library(flexdashboard)
+  knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+### Lectura de Archivo de Datos
+Los datos han sido obtenidos de las bases de datos de ENDES (Encuesta Demográfica y de Salud Familiar). Particularmente las del 2022
+
+```{r}
+library(readxl)
+datos <- read_excel("D:/R/data_clean.xlsx")
+```
+
+### Paquetes
+```{r}
+
+library(rio)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(polycor)
+library(modelsummary)
+library(psych)
+```
+
+### Limpieza y Transformacion
+```{r}
+data_clean <- datos %>% 
+  mutate(
+    nivel_educativo = factor(nivel_educativo),
+    acceso_edu_sexual = factor(acceso_edu_sexual),
+    ingreso_familiar = factor(ingreso_familiar),
+    num_em = factor(num_em)
+  )
+
+```
+
+
+### Analisis Univariado : Cantidad de Embarazos de Niñas y Adolescentes
+
+#### Distribución
+```{r}
+table(datos$num_em)
+
+barplot(table(data_clean$num_em), main = "Distribución de la variable dependiente", 
+        xlab = "Valores", ylab = "Frecuencia", col = "blue")
+
+```
+
+#### Medidas de Tendencia Central
+##### Media
+```{r}
+mean(datos$num_em)
+```
+
+##### Mediana
+```{r}
+median(datos$num_em)
+```
+
+##### Moda
+```{r}
+names(sort(table(datos$num_em), decreasing = TRUE))[1]
+```
+
+
+#### Medidas de Dispersión
+
+##### Rango
+```{r}
+range(datos$num_em)
+
+```
+
+##### Desviación Estándar
+```{r}
+sd(datos$num_em)
+
+```
+
+##### Varianza
+```{r}
+var(datos$num_em)
+
+```
+
+
+#### Forma de Distribución
+
+##### Simetria
+```{r}
+library(e1071)
+
+skewness(datos$num_em)
+
+```
+
+##### Curtosis
+
+```{r}
+kurtosis(datos$num_em)
+
+```
+
+### Analisis Multivariado
+
+
+
+#### Regresion
+```{r}
+modelo<- lm(datos$num_em ~ datos$nivel_educativo+ datos$acceso_edu_sexual+datos$ingreso_familiar,data=datos)
+
+summary(modelo)
+
+```
+
+#### Análisis Factorial
+
+```{r}
+data_clean <- data_clean %>%
+  mutate(
+    nivel_educativo = as.factor(nivel_educativo),
+    acceso_edu_sexual = as.factor(acceso_edu_sexual),
+    ingreso_familiar = as.factor(ingreso_familiar),
+    num_em = as.numeric(num_em)
+  )
+
+sum(is.na(data_clean))
+
+
+str(data_clean)
+#corMatrix <- hetcor(data_clean)
+
+```
+
+### Conclusiones
+
+
+
+
+#### Analisis Univarable
+
+Sobre el análisis univariado se tienen diferentes puntos : 
+
+1.Distribución : En los datos hay 7991 casos de jóvenes que no están embarazadas y 149 de jóvenes que sí. Lo que significa que alrededor del 1.8% son de la muestra son jóvenes embarazadas
+
+2.Media : La media es de 0.01830467. Esto refleja lo mismo que en la distribución, y es que por cada 100 jóvenes hay aproximadamente 2 que están embarazadas.
+
+2.Mediana y Moda : Es de 0. Esto significa que lo usual es que las jóvenes no estén embarazadas
+
+3.Rango : El rango es de 0 a 1. En la base de datos no hay ejemplos de casos en que la jóven tenga más de 1 embarazo.
+
+4.Desviación Estándar : 0.134. Esto indica que los datos están relativamente muy concentrados en la media (0.018).
+
+
+5.Varianza : 0.0179.Esto indica que los datos están relativamente muy concentrados en la media (0.018).
+
+
+6.Simetría : 7.1854. Esto significa que hay una distribución altamente sesgada hacia la derecha, lo que implica que la mayoría de los valores se encuentran con valor 0.
+
+7.Curtosis : 49.63. El valor es muy alto, lo que indica que los datos tienen  valores atípicos. Lo cual es correcto, pues no es atípico el embarazo de jóvenes.
+
+
+#### Analisis Multivaraible - Regresión
+
+Sobre el análisis univariado se tienen diferentes puntos : 
+
+1.Regresión : 
+1.1. Residuos : 
+- Mínimo : -0.03209
+- Primer Cuartil : -0.03209
+- Mediana : -0.02029
+- Tercer Cuartil : -0.00704
+- Máximo : 0.99296
+
+Los residuos están bastante cercanos a cero y entre el tercer cuartil y el máximo hay un salto muy grande. Esto indica la gran presencia de valores atípicos.
+
+1.2.Coeficientes : 
+
+-Intercepto: El valor estimado del intercepto es -0.036372. El p asociado es muy bajo. Esto indica que el intercepto es estadísticamente significativo
+
+
+
+-Nivel Educativo : 
+
+El coeficiente de secundaria completa es 0.043416, lo que indica que, en comparación con no tener educación secundaria, tener la secundaria completa aumenta el número de embarazos en 0.043416.Es estadísticamente significativo (p < 2e-16)
+
+El coeficiente de universidad completa es 0.056662, indicando un efecto aún mayor que tener secundaria completa.Es estadísticamente significativo (p = 2.82e-09)
+
+
+
+-Acceso a Educación : 
+
+El coeficiente estimado de tener acceso a educación sexual es 0.033798, lo que significa que tener acceso a educación sexual está asociado con un aumento de 0.033798 unidades en el número de embarazos.
+
+
+-Ingreso Familiar : 
+
+El coeficiente estimado de ingreso familiar bajo es 0.025043 , lo que sugiere que tener un ingreso familiar bajo aumenta en 0.025043 unidades el número de embarazos. Tiene un coeficiente significativo (p = 2.09e-08)
+
+El coeficiente estimado de ingreso familiar medio es 0.007939, pero este valor no es significativo (p = 0.116). No hay una relación clara enter el ingreso familiar medio y el número de embarazos
+
+
+1.3.Estadísticas del Modelo : 
+
+- Error Estándar : 
+
+-R cuadrado : 0.0108. Solo el 1.08% de la variabilidad es explicada por las variables independientes, lo cual es muy bajo.
+
+-Estadístico F : 17.76. El valor p es muy pequeño. Sugiere que el modelo es estadísticamente significativo, pero el R-cuadrado bajo sugiere que hay variables importantes que no se incluyen en el modelo.
+
+1.4.Conclusión : 
+
+- Las variables nivel educativo (secundaria completa y universidad completa) , acceso a educación sexual y ingreso familiar bajo están asociados al número de embarazos.
+
+- Sin embargo, el modelo tiene un bajo poder explicativo (R-cuadrado bajo). Esto sugiere que faltan aun muchas más variables para poder explicar el número de embarazos.
+
+
+### Análisis Multivariable -Factorial 
+
